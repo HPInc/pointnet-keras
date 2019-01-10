@@ -17,7 +17,7 @@ import keras
 from keras.optimizers import adam
 
 from modelnet_provider import ModelNetProvider
-from pointnet import pointnet
+from model import pointnet
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(message)s')
@@ -53,13 +53,13 @@ if __name__ == '__main__':
     # set up optimizers and compile
     monitor = 'val_loss'
 
-    optimizer = adam(lr=1e-4)
+    optimizer = adam(lr=1e-5)
     model.compile(loss=loss, optimizer=optimizer, metrics=metric)
 
     # tensorboard and weights saving callbacks
     callbacks = list()
     callbacks.append(keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=0, write_graph=True))
-    # callbacks.append(keras.callbacks.ReduceLROnPlateau(monitor=monitor, factor=0.5, patience=3, verbose=1, min_lr=1e-10))
+    callbacks.append(keras.callbacks.ReduceLROnPlateau(monitor=monitor, factor=0.5, patience=3, verbose=1, min_lr=1e-10))
     callbacks.append(keras.callbacks.EarlyStopping(monitor=monitor, patience=10))
     callbacks.append(keras.callbacks.ModelCheckpoint(weights_path, monitor=monitor, verbose=0, save_best_only=True,
                                                      save_weights_only=True, mode='auto', period=1))

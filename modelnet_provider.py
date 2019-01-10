@@ -15,46 +15,6 @@ import numpy as np
 import os
 
 
-def rotate_point_cloud_by_angle(batch_data):
-    """ Rotate the point cloud along up direction with certain angle.
-        Input:
-          BxNx3 array, original batch of point clouds
-        Return:
-          BxNx3 array, rotated batch of point clouds
-    """
-    rotated_data = np.zeros(batch_data.shape, dtype=np.float32)
-    for k in range(batch_data.shape[0]):
-        rotation_angle = np.random.uniform() * 2 * np.pi
-        cosval = np.cos(rotation_angle)
-        sinval = np.sin(rotation_angle)
-        rotation_matrix = np.array([[cosval, 0, sinval],
-                                    [0, 1, 0],
-                                    [-sinval, 0, cosval]])
-        shape_pc = batch_data[k, ...]
-        rotated_data[k, ...] = np.dot(shape_pc.reshape((-1, 3)), rotation_matrix)
-    return rotated_data
-
-
-def jitter_point_cloud(batch_data, sigma=0.01, clip=0.05):
-    """ Randomly jitter points. jittering is per point.
-        Input:
-          BxNx3 array, original batch of point clouds
-        Return:
-          BxNx3 array, jittered batch of point clouds
-    """
-    B, N, C = batch_data.shape
-    assert (clip > 0)
-    jittered_data = np.clip(sigma * np.random.randn(B, N, C), -1 * clip, clip)
-    jittered_data += batch_data
-    return jittered_data
-
-
-def augment_batch(x_batch):
-    x_batch = rotate_point_cloud_by_angle(x_batch)
-    x_batch = jitter_point_cloud(x_batch)
-    return x_batch
-
-
 class ModelNetProvider(object):
     def __init__(self, h5_path, input_size=None):
         """
@@ -117,6 +77,43 @@ class ModelNetProvider(object):
             if epoch_indices.size:
                 yield self.get_batch(epoch_indices, augmentation)
 
+    def rotate_point_cloud_by_angle(self, batch_data):
+        """ Rotate the point cloud along up direction with certain angle.
+            Input:
+              BxNx3 array, original batch of point clouds
+            Return:
+              BxNx3 array, rotated batch of point clouds
+        """
+        rotated_data = np.zeros(batch_data.shape, dtype=np.float32)
+        for k in range(batch_data.shape[0]):
+            rotation_angle = np.random.uniform() * 2 * np.pi
+            cosval = np.cos(rotation_angle)
+            sinval = np.sin(rotation_angle)
+            rotation_matrix = np.array([[cosval, 0, sinval],
+                                        [0, 1, 0],
+                                        [-sinval, 0, cosval]])
+            shape_pc = batch_data[k, ...]
+            rotated_data[k, ...] = np.dot(shape_pc.reshape((-1, 3)), rotation_matrix)
+        return rotated_data
+
+    def jitter_point_cloud(self, batch_data, sigma=0.01, clip=0.05):
+        """ Randomly jitter points. jittering is per point.
+            Input:
+              BxNx3 array, original batch of point clouds
+            Return:
+              BxNx3 array, jittered batch of point clouds
+        """
+        B, N, C = batch_data.shape
+        assert (clip > 0)
+        jittered_data = np.clip(sigma * np.random.randn(B, N, C), -1 * clip, clip)
+        jittered_data += batch_data
+        return jittered_data
+
+    def augment_batch(self, x_batch):
+        x_batch = self.rotate_point_cloud_by_angle(x_batch)
+        x_batch = self.jitter_point_cloud(x_batch)
+        return x_batch
+
     def get_batch(self, indices, augmentation):
         """
         Grab batch from dataset
@@ -129,6 +126,6 @@ class ModelNetProvider(object):
 
         # augment
         if augmentation:
-            x_batch = augment_batch(x_batch)
+            x_batch = self.augment_batch(x_batch)
 
         return x_batch, y_batch
