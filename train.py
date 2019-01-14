@@ -17,7 +17,8 @@ import keras
 from keras.optimizers import adam
 
 from modelnet_provider import ModelNetProvider
-from model import pointnet
+from model import pointnet_cls
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(message)s')
@@ -37,9 +38,19 @@ if __name__ == '__main__':
     batch_size = 32
     num_classes = 40
 
-    model = pointnet((input_size, 3), classes=num_classes)
+    model = pointnet_cls((input_size, 3), classes=num_classes)
     loss = 'sparse_categorical_crossentropy'
     metric = ['sparse_categorical_accuracy']
+    monitor = 'val_loss'
+
+    # tensorboard and weights saving callbacks
+    callbacks = list()
+    callbacks.append(keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=0, write_graph=True))
+    callbacks.append(
+        keras.callbacks.ReduceLROnPlateau(monitor=monitor, factor=0.5, patience=3, verbose=1, min_lr=1e-10))
+    callbacks.append(keras.callbacks.EarlyStopping(monitor=monitor, patience=10))
+    callbacks.append(keras.callbacks.ModelCheckpoint(weights_path, monitor=monitor, verbose=0, save_best_only=True,
+                                                     save_weights_only=True, mode='auto', period=1))
 
     # prepare dataset
     train_dataset = ModelNetProvider(train_list, input_size=input_size)
@@ -50,19 +61,8 @@ if __name__ == '__main__':
     val_generator = val_dataset.generate_samples(batch_size=batch_size, augmentation=False)
     val_steps_per_epoch = (val_dataset.x.shape[0] // batch_size) + 1
 
-    # set up optimizers and compile
-    monitor = 'val_loss'
-
-    optimizer = adam(lr=1e-5)
+    optimizer = adam(lr=1e-3)
     model.compile(loss=loss, optimizer=optimizer, metrics=metric)
-
-    # tensorboard and weights saving callbacks
-    callbacks = list()
-    callbacks.append(keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=0, write_graph=True))
-    callbacks.append(keras.callbacks.ReduceLROnPlateau(monitor=monitor, factor=0.5, patience=3, verbose=1, min_lr=1e-10))
-    callbacks.append(keras.callbacks.EarlyStopping(monitor=monitor, patience=10))
-    callbacks.append(keras.callbacks.ModelCheckpoint(weights_path, monitor=monitor, verbose=0, save_best_only=True,
-                                                     save_weights_only=True, mode='auto', period=1))
 
     # train
     # model.summary()
