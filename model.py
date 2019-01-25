@@ -1,4 +1,5 @@
 __copyright__ = "Copyright (C) 2019 HP Development Company, L.P."
+# SPDX-License-Identifier: MIT
 
 from keras import backend as K
 from keras.layers import Input, Dropout, Flatten, Dense, MaxPooling2D, Dot, Lambda
