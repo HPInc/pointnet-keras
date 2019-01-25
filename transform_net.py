@@ -1,3 +1,5 @@
+__copyright__ = "Copyright (C) 2019 HP Development Company, L.P."
+
 import keras.backend as K
 from keras.layers import MaxPooling2D, Flatten, Lambda, Dense, Reshape
 from keras.initializers import Constant

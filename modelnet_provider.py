@@ -1,14 +1,4 @@
-#
-# Copyright (C) 2017 HP Development Company, L.P.
-#
-# NOTICE:  All information contained herein is, and remains the property of HP
-# and its affiliates. The intellectual and technical concepts contained herein
-# are proprietary to HP and its affiliates and may be covered by U.S. and
-# Foreign Patents, patents in process, and are protected by trade secret or
-# copyright law.  Dissemination of this information or reproduction of this
-# material is strictly forbidden unless prior written permission is obtained
-# from HP.
-#
+__copyright__ = "Copyright (C) 2019 HP Development Company, L.P."
 
 import h5py
 import numpy as np
