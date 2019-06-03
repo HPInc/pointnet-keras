@@ -7,8 +7,8 @@ from keras.initializers import Constant
 
 import numpy as np
 
-from utils import conv1d_bn, dense_bn
-from regularizers import orthogonal
+from .utils import conv1d_bn, dense_bn
+from .regularizers import orthogonal
 
 
 def transform_net(inputs, scope=None, regularize=False):

@@ -5,8 +5,8 @@ from keras import backend as K
 from keras.layers import Input, Dropout, Flatten, Dense, MaxPooling2D, Dot, Lambda
 from keras.models import Model
 
-from utils import conv1d_bn, dense_bn
-from transform_net import transform_net
+from .utils import conv1d_bn, dense_bn
+from .transform_net import transform_net
 
 
 def pointnet_base(inputs):
