@@ -140,11 +140,12 @@ def pointnet_base(inputs):
     return net
 
 
-def pointnet_cls(input_shape, classes):
+def pointnet_cls(input_shape, classes, activation=None):
     """
     PointNet model for object classification
     :param input_shape: shape of the input point clouds (NxK)
-    :param classes: number of classes in the classification problem
+    :param classes: number of classes in the classification problem; if dict, construct multiple disjoint top layers
+    :param activation: activation of the last layer
     :return: Keras model of the classification network
     """
 
@@ -160,12 +161,20 @@ def pointnet_cls(input_shape, classes):
     net = MaxPooling2D(pool_size=(num_point, 1), padding='valid', name='maxpool')(Lambda(K.expand_dims)(net))
     net = Flatten()(net)
 
-    # Fully connected layers
-    net = dense_bn(net, units=512, scope='fc1', activation='relu')
-    net = Dropout(0.3, name='dp1')(net)
-    net = dense_bn(net, units=256, scope='fc2', activation='relu')
-    net = Dropout(0.3, name='dp2')(net)
-    net = Dense(units=classes, name='fc3', activation='softmax')(net)
+    # Top layers
+    if isinstance(classes, dict):
+        # Fully connected layers
+        net = [dense_bn(net, units=512, scope=r + '_fc1', activation='relu') for r in classes]
+        net = [Dropout(0.3, name=r + '_dp1')(n) for r, n in zip(classes, net)]
+        net = [dense_bn(n, units=256, scope=r + '_fc2', activation='relu') for r, n in zip(classes, net)]
+        net = [Dropout(0.3, name=r + '_dp2')(n) for r, n in zip(classes, net)]
+        net = [Dense(units=classes[r], activation=activation, name=r)(n) for r, n in zip(classes, net)]
+    else:
+        net = dense_bn(net, units=512, scope='fc1', activation='relu')
+        net = Dropout(0.3, name='dp1')(net)
+        net = dense_bn(net, units=256, scope='fc2', activation='relu')
+        net = Dropout(0.3, name='dp2')(net)
+        net = Dense(units=classes, name='fc3', activation=activation)(net)
 
     model = Model(inputs, net, name='pointnet_cls')
 
