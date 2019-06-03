@@ -30,7 +30,7 @@ if __name__ == '__main__':
     batch_size = 32
     num_classes = 40
 
-    model = pointnet_cls((input_size, 3), classes=num_classes)
+    model = pointnet_cls((input_size, 3), classes=num_classes, activation='softmax')
     loss = 'sparse_categorical_crossentropy'
     metric = ['sparse_categorical_accuracy']
     monitor = 'val_loss'
