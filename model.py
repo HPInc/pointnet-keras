@@ -3,7 +3,7 @@ __copyright__ = "Copyright (C) 2019 HP Development Company, L.P."
 
 from keras import backend as K
 from keras.layers import Input, Dropout, Flatten, Dense, MaxPooling2D, Dot, Lambda, \
-    Reshape, BatchNormalization, Activation, Conv1D
+    Reshape, BatchNormalization, Activation, Conv1D, AveragePooling2D
 from keras.initializers import Constant
 from keras.models import Model
 from keras.regularizers import Regularizer
@@ -146,7 +146,7 @@ def pointnet_base(inputs):
     return net
 
 
-def pointnet_cls(include_top=True, weights=None, input_shape=(2048, 3), classes=40, activation=None):
+def pointnet_cls(include_top=True, weights=None, input_shape=(2048, 3), pooling=None, classes=40, activation=None):
     """
     PointNet model for object classification
     :param include_top: whether to include the stack of fully connected layers
@@ -154,6 +154,16 @@ def pointnet_cls(include_top=True, weights=None, input_shape=(2048, 3), classes=
                     'modelnet' (pre-training on ModelNet),
                     or the path to the weights file to be loaded.
     :param input_shape: shape of the input point clouds (NxK)
+    :param pooling: Optional pooling mode for feature extraction
+            when `include_top` is `False`.
+            - `None` means that the output of the model will be
+                the 2D tensor output of the last convolutional block (Nx1024).
+            - `avg` means that global average pooling
+                will be applied to the output of the
+                last convolutional block, and thus
+                the output of the model will be a 1D tensor of size 1024.
+            - `max` means that global max pooling will
+                be applied.
     :param classes: number of classes in the classification problem; if dict, construct multiple disjoint top layers
     :param activation: activation of the last layer (default None).
     :return: Keras model of the classification network
@@ -186,6 +196,11 @@ def pointnet_cls(include_top=True, weights=None, input_shape=(2048, 3), classes=
             net = dense_bn(net, units=256, scope='fc2', activation='relu')
             net = Dropout(0.3, name='dp2')(net)
             net = Dense(units=classes, name='fc3', activation=activation)(net)
+    else:
+        if pooling == 'avg':
+            net = MaxPooling2D(pool_size=(num_point, 1), padding='valid', name='maxpool')(Lambda(K.expand_dims)(net))
+        elif pooling == 'max':
+            net = AveragePooling2D(pool_size=(num_point, 1), padding='valid', name='avgpool')(Lambda(K.expand_dims)(net))
 
     model = Model(inputs, net, name='pointnet_cls')
 
