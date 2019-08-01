@@ -7,9 +7,14 @@ from keras.layers import Input, Dropout, Flatten, Dense, MaxPooling2D, Dot, Lamb
 from keras.initializers import Constant
 from keras.models import Model
 from keras.regularizers import Regularizer
-from keras.applications import VGG16
+import keras.utils as keras_utils
 
 import numpy as np
+
+
+WEIGHTS_PATH = ('https://github.com/HPInc/pointnet-keras/'
+                'releases/download/v1.0/'
+                'pointnet_modelnet_weights_tf_dim_ordering_tf_kernels.h5')
 
 
 class OrthogonalRegularizer(Regularizer):
@@ -144,9 +149,13 @@ def pointnet_base(inputs):
 def pointnet_cls(include_top=True, weights=None, input_shape=(2048, 3), classes=40, activation=None):
     """
     PointNet model for object classification
+    :param include_top: whether to include the stack of fully connected layers
+    :param weights: one of `None` (random initialization),
+                    'modelnet' (pre-training on ModelNet),
+                    or the path to the weights file to be loaded.
     :param input_shape: shape of the input point clouds (NxK)
     :param classes: number of classes in the classification problem; if dict, construct multiple disjoint top layers
-    :param activation: activation of the last layer
+    :param activation: activation of the last layer (default None).
     :return: Keras model of the classification network
     """
 
@@ -164,13 +173,14 @@ def pointnet_cls(include_top=True, weights=None, input_shape=(2048, 3), classes=
         net = MaxPooling2D(pool_size=(num_point, 1), padding='valid', name='maxpool')(Lambda(K.expand_dims)(net))
         net = Flatten()(net)
         if isinstance(classes, dict):
-            # Fully connected layers
+            # Disjoint stacks of fc layers, one per value in dict
             net = [dense_bn(net, units=512, scope=r + '_fc1', activation='relu') for r in classes]
             net = [Dropout(0.3, name=r + '_dp1')(n) for r, n in zip(classes, net)]
             net = [dense_bn(n, units=256, scope=r + '_fc2', activation='relu') for r, n in zip(classes, net)]
             net = [Dropout(0.3, name=r + '_dp2')(n) for r, n in zip(classes, net)]
             net = [Dense(units=classes[r], activation=activation, name=r)(n) for r, n in zip(classes, net)]
         else:
+            # Fully connected layers for a single classification task
             net = dense_bn(net, units=512, scope='fc1', activation='relu')
             net = Dropout(0.3, name='dp1')(net)
             net = dense_bn(net, units=256, scope='fc2', activation='relu')
@@ -178,5 +188,17 @@ def pointnet_cls(include_top=True, weights=None, input_shape=(2048, 3), classes=
             net = Dense(units=classes, name='fc3', activation=activation)(net)
 
     model = Model(inputs, net, name='pointnet_cls')
+
+    # Load weights.
+    if weights == 'modelnet':
+        weights_path = keras_utils.get_file(
+            'pointnet_modelnet_weights_tf_dim_ordering_tf_kernels.h5',
+            WEIGHTS_PATH,
+            cache_subdir='models')
+        model.load_weights(weights_path, by_name=True)
+        if K.backend() == 'theano':
+            keras_utils.convert_all_kernels_in_model(model)
+    elif weights is not None:
+        model.load_weights(weights, by_name=True)
 
     return model
