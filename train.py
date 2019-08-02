@@ -30,7 +30,7 @@ if __name__ == '__main__':
     batch_size = 32
     num_classes = 40
 
-    model = pointnet_cls((input_size, 3), classes=num_classes, activation='softmax')
+    model = pointnet_cls(input_shape=(input_size, 3), classes=num_classes, activation='softmax')
     loss = 'sparse_categorical_crossentropy'
     metric = ['sparse_categorical_accuracy']
     monitor = 'val_loss'
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     callbacks = list()
     callbacks.append(keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=0, write_graph=True))
     callbacks.append(
-        keras.callbacks.ReduceLROnPlateau(monitor=monitor, factor=0.5, patience=3, verbose=1, min_lr=1e-10))
+        keras.callbacks.ReduceLROnPlateau(monitor=monitor, factor=0.5, patience=5, verbose=1, min_lr=1e-10))
     callbacks.append(keras.callbacks.EarlyStopping(monitor=monitor, patience=10))
     callbacks.append(keras.callbacks.ModelCheckpoint(weights_path, monitor=monitor, verbose=0, save_best_only=True,
                                                      save_weights_only=True, mode='auto', period=1))
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     val_generator = val_dataset.generate_samples(batch_size=batch_size, augmentation=False)
     val_steps_per_epoch = (val_dataset.x.shape[0] // batch_size) + 1
 
-    optimizer = adam(lr=1e-3)
+    optimizer = adam(lr=3e-4)
     model.compile(loss=loss, optimizer=optimizer, metrics=metric)
 
     # train
