@@ -114,29 +114,32 @@ def transform_net(inputs, scope=None, regularize=False):
     return transform
 
 
-def pointnet_base(inputs):
+def pointnet_base(inputs, use_tnet=True):
     """
     Convolutional portion of pointnet, common across different tasks (classification, segmentation, etc)
     :param inputs: Input tensor with the point cloud shape (BxNxK)
+    :param use_tnet: whether to use the transformation subnets or not.
     :return: tensor layer for CONV5 activations
     """
 
     # Obtain spatial point transform from inputs and convert inputs
-    ptransform = transform_net(inputs, scope='transform_net1', regularize=False)
-    point_cloud_transformed = Dot(axes=(2, 1))([inputs, ptransform])
+    if use_tnet:
+        ptransform = transform_net(inputs, scope='transform_net1', regularize=False)
+        point_cloud_transformed = Dot(axes=(2, 1))([inputs, ptransform])
 
     # First block of convolutions
-    net = conv1d_bn(point_cloud_transformed, num_filters=64, kernel_size=1, padding='valid',
+    net = conv1d_bn(point_cloud_transformed if use_tnet else inputs, num_filters=64, kernel_size=1, padding='valid',
                     use_bias=True, scope='conv1')
     net = conv1d_bn(net, num_filters=64, kernel_size=1, padding='valid',
                     use_bias=True, scope='conv2')
 
     # Obtain feature transform and apply it to the network
-    ftransform = transform_net(net, scope='transform_net2', regularize=True)
-    net_transformed = Dot(axes=(2, 1))([net, ftransform])
+    if use_tnet:
+        ftransform = transform_net(net, scope='transform_net2', regularize=True)
+        net_transformed = Dot(axes=(2, 1))([net, ftransform])
 
     # Second block of convolutions
-    net = conv1d_bn(net_transformed, num_filters=64, kernel_size=1, padding='valid',
+    net = conv1d_bn(net_transformed if use_tnet else net, num_filters=64, kernel_size=1, padding='valid',
                     use_bias=True, scope='conv3')
     net = conv1d_bn(net, num_filters=128, kernel_size=1, padding='valid',
                     use_bias=True, scope='conv4')
@@ -146,7 +149,8 @@ def pointnet_base(inputs):
     return net
 
 
-def pointnet_cls(include_top=True, weights=None, input_shape=(2048, 3), pooling=None, classes=40, activation=None):
+def pointnet_cls(include_top=True, weights=None, input_shape=(2048, 3),
+                 pooling=None, classes=40, activation=None, use_tnet=True):
     """
     PointNet model for object classification
     :param include_top: whether to include the stack of fully connected layers
@@ -166,6 +170,7 @@ def pointnet_cls(include_top=True, weights=None, input_shape=(2048, 3), pooling=
                 be applied.
     :param classes: number of classes in the classification problem; if dict, construct multiple disjoint top layers
     :param activation: activation of the last layer (default None).
+    :param use_tnet: whether to use the transformation subnets or not.
     :return: Keras model of the classification network
     """
 
@@ -174,7 +179,7 @@ def pointnet_cls(include_top=True, weights=None, input_shape=(2048, 3), pooling=
 
     # Generate input tensor and get base network
     inputs = Input(input_shape, name='Input_cloud')
-    net = pointnet_base(inputs)
+    net = pointnet_base(inputs, use_tnet)
 
     # Top layers
     if include_top:
