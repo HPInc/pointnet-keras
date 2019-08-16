@@ -186,7 +186,7 @@ def pointnet_cls(include_top=True, weights=None, input_shape=(2048, 3),
         # Symmetric function: max pooling
         # Done in 2D since 1D is painfully slow
         net = MaxPooling2D(pool_size=(num_point, 1), padding='valid', name='maxpool')(Lambda(K.expand_dims)(net))
-        net = Flatten()(net)
+        net = Reshape((1024,))(net)
         if isinstance(classes, dict):
             # Disjoint stacks of fc layers, one per value in dict
             net = [dense_bn(net, units=512, scope=r + '_fc1', activation='relu') for r in classes]
@@ -204,8 +204,10 @@ def pointnet_cls(include_top=True, weights=None, input_shape=(2048, 3),
     else:
         if pooling == 'avg':
             net = MaxPooling2D(pool_size=(num_point, 1), padding='valid', name='maxpool')(Lambda(K.expand_dims)(net))
+            net = Reshape((net.shape[-2],))(net)
         elif pooling == 'max':
             net = AveragePooling2D(pool_size=(num_point, 1), padding='valid', name='avgpool')(Lambda(K.expand_dims)(net))
+            net = Reshape((net.shape[-2],))(net)
 
     model = Model(inputs, net, name='pointnet_cls')
 
