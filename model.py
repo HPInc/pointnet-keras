@@ -1,13 +1,13 @@
 __copyright__ = "Copyright (C) 2019 HP Development Company, L.P."
 # SPDX-License-Identifier: MIT
 
-from keras import backend as K
-from keras.layers import Input, Dropout, Flatten, Dense, MaxPooling2D, Dot, Lambda, \
+from tensorflow.keras import backend as K
+from tensorflow.keras.layers import Input, Dropout, Flatten, Dense, MaxPooling2D, Dot, Lambda, \
     Reshape, BatchNormalization, Activation, Conv1D, AveragePooling2D
-from keras.initializers import Constant
-from keras.models import Model
-from keras.regularizers import Regularizer
-import keras.utils as keras_utils
+from tensorflow.keras.initializers import Constant
+from tensorflow.keras.models import Model
+from tensorflow.keras.regularizers import Regularizer
+import tensorflow.keras.utils as keras_utils
 
 import numpy as np
 
