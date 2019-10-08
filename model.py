@@ -1,13 +1,13 @@
 __copyright__ = "Copyright (C) 2019 HP Development Company, L.P."
 # SPDX-License-Identifier: MIT
 
-from keras import backend as K
-from keras.layers import Input, Dropout, Flatten, Dense, MaxPooling2D, Dot, Lambda, \
+from tensorflow.keras import backend as K
+from tensorflow.keras.layers import Input, Dropout, Flatten, Dense, MaxPooling2D, Dot, Lambda, \
     Reshape, BatchNormalization, Activation, Conv1D, AveragePooling2D
-from keras.initializers import Constant
-from keras.models import Model
-from keras.regularizers import Regularizer
-import keras.utils as keras_utils
+from tensorflow.keras.initializers import Constant
+from tensorflow.keras.models import Model
+from tensorflow.keras.regularizers import Regularizer
+import tensorflow.keras.utils as keras_utils
 
 import numpy as np
 
@@ -149,7 +149,7 @@ def pointnet_base(inputs, use_tnet=True):
     return net
 
 
-def pointnet_cls(include_top=True, weights=None, input_shape=(2048, 3),
+def pointnet_cls(include_top=True, weights=None, input_tensor=None, input_shape=(2048, 3),
                  pooling=None, classes=40, activation=None, use_tnet=True):
     """
     PointNet model for object classification
@@ -157,6 +157,7 @@ def pointnet_cls(include_top=True, weights=None, input_shape=(2048, 3),
     :param weights: one of `None` (random initialization),
                     'modelnet' (pre-training on ModelNet),
                     or the path to the weights file to be loaded.
+    :param input_tensor: optional tensor of size BxNxK
     :param input_shape: shape of the input point clouds (NxK)
     :param pooling: Optional pooling mode for feature extraction
             when `include_top` is `False`.
@@ -175,18 +176,19 @@ def pointnet_cls(include_top=True, weights=None, input_shape=(2048, 3),
     """
 
     assert K.image_data_format() == 'channels_last'
-    num_point = input_shape[0]
 
     # Generate input tensor and get base network
-    inputs = Input(input_shape, name='Input_cloud')
-    net = pointnet_base(inputs, use_tnet)
+    if input_tensor is None:
+        input_tensor = Input(input_shape, name='Input_cloud')
+    num_point = input_tensor.shape[-2]
+    net = pointnet_base(input_tensor, use_tnet)
 
     # Top layers
     if include_top:
         # Symmetric function: max pooling
         # Done in 2D since 1D is painfully slow
         net = MaxPooling2D(pool_size=(num_point, 1), padding='valid', name='maxpool')(Lambda(K.expand_dims)(net))
-        net = Flatten()(net)
+        net = Reshape((1024,))(net)
         if isinstance(classes, dict):
             # Disjoint stacks of fc layers, one per value in dict
             net = [dense_bn(net, units=512, scope=r + '_fc1', activation='relu') for r in classes]
@@ -204,10 +206,12 @@ def pointnet_cls(include_top=True, weights=None, input_shape=(2048, 3),
     else:
         if pooling == 'avg':
             net = MaxPooling2D(pool_size=(num_point, 1), padding='valid', name='maxpool')(Lambda(K.expand_dims)(net))
+            net = Reshape((net.shape[-2],))(net)
         elif pooling == 'max':
             net = AveragePooling2D(pool_size=(num_point, 1), padding='valid', name='avgpool')(Lambda(K.expand_dims)(net))
+            net = Reshape((net.shape[-2],))(net)
 
-    model = Model(inputs, net, name='pointnet_cls')
+    model = Model(input_tensor, net, name='pointnet_cls')
 
     # Load weights.
     if weights == 'modelnet':

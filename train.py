@@ -5,8 +5,8 @@ import datetime
 import logging
 import os
 
-import keras
-from keras.optimizers import adam
+import tensorflow.keras as keras
+from tensorflow.keras.optimizers import Adam
 
 from modelnet_provider import ModelNetProvider
 from model import pointnet_cls
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     val_generator = val_dataset.generate_samples(batch_size=batch_size, augmentation=False)
     val_steps_per_epoch = (val_dataset.x.shape[0] // batch_size) + 1
 
-    optimizer = adam(lr=3e-4)
+    optimizer = Adam(lr=3e-4)
     model.compile(loss=loss, optimizer=optimizer, metrics=metric)
 
     # train
