@@ -17,7 +17,7 @@ unzip modelnet40_ply_hdf5_2048.zip
 
 ## Training
 
-Tested on Ubuntu 16.04, with Keras 2.2.4 and Tensorflow 1.9.0.
+Tested on Tensorflow 1.14 with tf.keras. Originally designed using Keras 2.2.4.
 
 Simply run the training script to proceed. The best model will be saved with respect to the validation loss.
 
